@@ -295,6 +295,10 @@
         button.success {
             background-color: #2ecc71;
         }
+
+        button.warning {
+            background-color: #f39c12;
+        }
     </style>
 </head>
 <body>
@@ -376,12 +380,17 @@
                 <button id="deleteSelectedBtn" class="danger">Excluir Selecionados</button>
                 <button id="newListBtn">Gerar PDF</button>
             </div>
+            <div class="action-group">
+                <button id="saveListBtn" class="warning">Salvar Lista</button>
+                <button id="loadListBtn" class="secondary">Carregar Lista</button>
+                <button id="clearListBtn" class="danger">Limpar Tudo</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Todos os 72 itens da lista original
-        const itemsData = [
+        // Itens da lista conforme solicitado
+        const initialItemsData = [
             // Padaria e Acompanhamentos (2 itens)
             { id: 1, name: "Pão de Mel Barion Choc. ao Leite 300g", category: "padaria", unit: "un", price: 10.19 },
             { id: 2, name: "Pão de Forma Visconti Trad. 400g", category: "padaria", unit: "un", price: 4.99 },
@@ -475,6 +484,7 @@
             { id: 70, name: "Peito de Peru Defumado 200g", category: "carnes", unit: "un", price: 9.80 },
             { id: 71, name: "Biscoito de Polvilho 200g", category: "biscoitos", unit: "un", price: 5.20 },
             { id: 72, name: "Pão Sírio Integral 300g", category: "padaria", unit: "un", price: 7.80 }
+            // ... (todos os outros itens iniciais)
         ];
 
         // Mapeamento de categorias para nomes exibidos
@@ -492,8 +502,22 @@
         };
 
         // Estado da aplicação
-        let items = JSON.parse(JSON.stringify(itemsData));
-        let nextId = 73; // Próximo ID disponível
+        let items = [];
+        let nextId = 1;
+        let lastFocusedElement = null;
+
+        // Função para inicializar os itens
+        function initializeItems() {
+            const savedData = localStorage.getItem('shoppingListData');
+            if (savedData) {
+                const listData = JSON.parse(savedData);
+                items = listData.items;
+                nextId = listData.nextId;
+            } else {
+                items = JSON.parse(JSON.stringify(initialItemsData));
+                nextId = initialItemsData.length + 1;
+            }
+        }
 
         // Função para renderizar os itens agrupados por categoria
         function renderItems(categoryFilter = 'all', searchTerm = '') {
@@ -501,7 +525,7 @@
             categoriesContainer.innerHTML = '';
 
             let selectedCount = 0;
-            let totalQuantity = 0;
+            let totalItems = 0;
             let grandTotal = 0;
 
             // Agrupar itens por categoria
@@ -520,6 +544,7 @@
                     itemsByCategory[item.category] = [];
                 }
                 itemsByCategory[item.category].push(item);
+                totalItems++;
             });
 
             // Ordenar categorias
@@ -572,7 +597,6 @@
                     
                     if (item.selected) {
                         selectedCount++;
-                        if (item.quantity) totalQuantity += item.quantity;
                         grandTotal += itemTotal;
                     }
 
@@ -609,8 +633,20 @@
 
             // Atualizar resumo
             document.getElementById('selectedItems').textContent = selectedCount;
-            document.getElementById('totalQuantity').textContent = totalQuantity;
+            document.getElementById('totalQuantity').textContent = totalItems;
             document.getElementById('grandTotal').textContent = `R$ ${grandTotal.toFixed(2)}`;
+
+            // Restaurar o foco se necessário
+            if (lastFocusedElement) {
+                const { id, type } = lastFocusedElement;
+                const element = document.querySelector(`.${type}-input[data-id="${id}"]`);
+                if (element) {
+                    element.focus();
+                    // Posicionar o cursor no final do valor
+                    const valueLength = element.value.length;
+                    element.setSelectionRange(valueLength, valueLength);
+                }
+            }
         }
 
         // Função para atualizar um item
@@ -622,8 +658,10 @@
                 item.selected = value;
             } else if (property === 'quantity') {
                 item.quantity = value === '' ? null : parseFloat(value);
+                lastFocusedElement = { id, type: 'quantity' };
             } else if (property === 'price') {
                 item.price = parseFloat(value) || 0;
+                lastFocusedElement = { id, type: 'price' };
             }
 
             renderItems(
@@ -748,8 +786,47 @@
             doc.save(`lista_compras_${new Date().toISOString().slice(0, 10)}.pdf`);
         }
 
+        // Função para salvar a lista no localStorage
+        function saveList() {
+            const listData = {
+                items: items,
+                nextId: nextId,
+                lastSaved: new Date().toISOString()
+            };
+            
+            localStorage.setItem('shoppingListData', JSON.stringify(listData));
+            alert('Lista salva com sucesso!');
+        }
+
+        // Função para carregar a lista do localStorage
+        function loadList() {
+            const savedData = localStorage.getItem('shoppingListData');
+            if (!savedData) {
+                alert('Nenhuma lista salva encontrada');
+                return;
+            }
+            
+            if (confirm('Deseja carregar a lista salva? Isso substituirá a lista atual.')) {
+                const listData = JSON.parse(savedData);
+                items = listData.items;
+                nextId = listData.nextId;
+                renderItems();
+                alert('Lista carregada com sucesso!');
+            }
+        }
+
+        // Função para limpar toda a lista
+        function clearList() {
+            if (confirm('Tem certeza que deseja limpar toda a lista? Esta ação não pode ser desfeita.')) {
+                items = [];
+                nextId = 1;
+                renderItems();
+            }
+        }
+
         // Inicializar a aplicação
         document.addEventListener('DOMContentLoaded', () => {
+            initializeItems();
             renderItems();
             
             // Evento de busca
@@ -832,6 +909,11 @@
             });
             
             document.getElementById('newListBtn').addEventListener('click', generatePDF);
+            
+            // Novos botões de salvamento
+            document.getElementById('saveListBtn').addEventListener('click', saveList);
+            document.getElementById('loadListBtn').addEventListener('click', loadList);
+            document.getElementById('clearListBtn').addEventListener('click', clearList);
         });
     </script>
 </body>
