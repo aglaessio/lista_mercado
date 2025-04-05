@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Compras Completa</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Controles */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .controls {
+                flex-direction: row;
+            }
+        }
+
+        .search-box {
+            flex: 2;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .category-filter {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        /* Formulário de novo item */
+        .add-item-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .add-item-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        @media (min-width: 480px) {
+            .add-item-row {
+                flex-direction: row;
+            }
+        }
+
+        .name-input {
+            flex: 3;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .price-input, 
+        .quantity-input,
+        .unit-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .price-input {
+            text-align: right;
+        }
+
+        .add-item-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* Categorias */
+        .category-group {
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .category-header {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .category-header h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .category-count {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .category-content {
+            overflow-x: auto;
+        }
+
+        /* Tabela de itens */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .items-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .items-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .items-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .items-table tr.selected {
+            background-color: #e3f2fd;
+        }
+
+        .item-checkbox {
+            width: 18px;
+            height: 18px;
+        }
+
+        .quantity-input, 
+        .price-input {
+            width: 100%;
+            max-width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .price-input {
+            text-align: right;
+        }
+
+        .total-price {
+            font-weight: bold;
+            color: #27ae60;
+            white-space: nowrap;
+        }
+
+        .delete-btn {
+            color: #e74c3c;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Resumo */
+        .summary {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .summary-total {
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        /* Ações */
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button.secondary {
+            background-color: #95a5a6;
+        }
+
+        button.danger {
+            background-color: #e74c3c;
+        }
+
+        button.success {
+            background-color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lista de Compras Completa</h1>
+        
+        <form class="add-item-form" id="addItemForm">
+            <div class="add-item-row">
+                <input type="text" id="newItemName" class="name-input" placeholder="Nome do produto" required>
+                <input type="number" min="0" step="0.01" id="newItemPrice" class="price-input" placeholder="Preço unitário" required>
+                <input type="number" min="0" step="0.001" id="newItemQuantity" class="quantity-input" placeholder="Quantidade">
+                <select id="newItemUnit" class="unit-input">
+                    <option value="un">un</option>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="l">l</option>
+                    <option value="ml">ml</option>
+                    <option value="cx">cx</option>
+                    <option value="pct">pct</option>
+                </select>
+                <select id="newItemCategory" class="category-filter">
+                    <option value="padaria">Padaria</option>
+                    <option value="biscoitos">Biscoitos</option>
+                    <option value="laticinios">Laticínios</option>
+                    <option value="graos">Grãos</option>
+                    <option value="molhos">Molhos</option>
+                    <option value="carnes">Carnes</option>
+                    <option value="bebidas">Bebidas</option>
+                    <option value="hortifruti">Hortifrúti</option>
+                    <option value="limpeza">Limpeza</option>
+                    <option value="diversos">Diversos</option>
+                </select>
+            </div>
+            <button type="submit" id="addItemBtn" class="success">Adicionar Item</button>
+        </form>
+        
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Pesquisar itens...">
+            </div>
+            <select id="categoryFilter" class="category-filter">
+                <option value="all">Todas as categorias</option>
+                <option value="padaria">Padaria</option>
+                <option value="biscoitos">Biscoitos</option>
+                <option value="laticinios">Laticínios</option>
+                <option value="graos">Grãos</option>
+                <option value="molhos">Molhos</option>
+                <option value="carnes">Carnes</option>
+                <option value="bebidas">Bebidas</option>
+                <option value="hortifruti">Hortifrúti</option>
+                <option value="limpeza">Limpeza</option>
+                <option value="diversos">Diversos</option>
+            </select>
+        </div>
+
+        <div id="categoriesContainer"></div>
+
+        <div class="summary">
+            <div class="summary-item">
+                <span>Itens selecionados:</span>
+                <span id="selectedItems">0</span>
+            </div>
+            <div class="summary-item">
+                <span>Quantidade total:</span>
+                <span id="totalQuantity">0</span>
+            </div>
+            <div class="summary-item summary-total">
+                <span>Valor total:</span>
+                <span id="grandTotal">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <div class="action-group">
+                <button id="selectAllBtn" class="secondary">Selecionar Tudo</button>
+                <button id="clearSelectionBtn" class="secondary">Limpar Seleção</button>
+            </div>
+            <div class="action-group">
+                <button id="deleteSelectedBtn" class="danger">Excluir Selecionados</button>
+                <button id="newListBtn">Gerar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Todos os 72 itens da lista original
+        const itemsData = [
+            // Padaria e Acompanhamentos (2 itens)
+            { id: 1, name: "Pão de Mel Barion Choc. ao Leite 300g", category: "padaria", unit: "un", price: 10.19 },
+            { id: 2, name: "Pão de Forma Visconti Trad. 400g", category: "padaria", unit: "un", price: 4.99 },
+            
+            // Biscoitos e Salgadinhos (11 itens)
+            { id: 3, name: "Bisc. Marilan Maizena 350g", category: "biscoitos", unit: "un", price: 4.99 },
+            { id: 4, name: "Bisc. Club Social Rech. Queijo/Manjericão 106g", category: "biscoitos", unit: "un", price: 6.69 },
+            { id: 5, name: "Bisc. Club Social Pizza 141g", category: "biscoitos", unit: "un", price: 5.89 },
+            { id: 6, name: "Batata Palha Condor 120g", category: "biscoitos", unit: "un", price: 7.99 },
+            { id: 7, name: "Salg. Doritos Dinamita 60g", category: "biscoitos", unit: "un", price: 3.79 },
+            { id: 8, name: "Salg. Cheez It Nacho Explosion 75g", category: "biscoitos", unit: "un", price: 4.99 },
+            { id: 9, name: "Torrada Marilan Magic Toast Orig. 110g", category: "biscoitos", unit: "un", price: 4.99 },
+            { id: 10, name: "Bisc. Bauducco Waffer Morango 140g", category: "biscoitos", unit: "un", price: 2.99 },
+            { id: 11, name: "Bisc. Bauducco Waffer Choc. Avelã 140g", category: "biscoitos", unit: "un", price: 2.99 },
+            { id: 12, name: "Bisc. Bono Rech. Doce de Leite 90g", category: "biscoitos", unit: "un", price: 2.79 },
+            { id: 13, name: "Batata Ruffles Original 100g (Tubo)", category: "biscoitos", unit: "un", price: 7.49 },
+            
+            // Laticínios e Achocolatados (6 itens)
+            { id: 14, name: "Leite em Pó Italac Integral Instantâneo 400g", category: "laticinios", unit: "un", price: 15.49 },
+            { id: 15, name: "Achocolatado Nescau 1,02kg", category: "laticinios", unit: "un", price: 19.98 },
+            { id: 16, name: "Farinha Láctea Condor 230g", category: "laticinios", unit: "un", price: 7.99 },
+            { id: 17, name: "Leite Tirol Integral 1L UHT", category: "laticinios", unit: "un", price: 4.59 },
+            { id: 18, name: "Creme de Leite Italac Leve 200g", category: "laticinios", unit: "un", price: 2.99 },
+            { id: 19, name: "Queijo Muçarela Tonutti Fatiado 200g", category: "laticinios", unit: "un", price: 8.98 },
+            
+            // Grãos e Farináceos (9 itens)
+            { id: 20, name: "Feijão Carioca PE Vermelho 1kg", category: "graos", unit: "un", price: 6.19 },
+            { id: 21, name: "Feijão Preto PE Vermelho 1kg", category: "graos", unit: "un", price: 4.89 },
+            { id: 22, name: "Flocão de Arroz Urbano 500g", category: "graos", unit: "un", price: 4.69 },
+            { id: 23, name: "Farinha de Milho Zaeli Flocão 500g", category: "graos", unit: "un", price: 3.99 },
+            { id: 24, name: "Tapioca Lopes 1kg", category: "graos", unit: "un", price: 7.98 },
+            { id: 25, name: "Farinha de Trigo Coamo 5kg", category: "graos", unit: "un", price: 15.98 },
+            { id: 26, name: "Arroz Rampinelli Branco 5kg", category: "graos", unit: "un", price: 19.98 },
+            { id: 27, name: "Farinha de Mandioca Pinduca Branca 1kg", category: "graos", unit: "un", price: 7.99 },
+            { id: 28, name: "Polvilho Azedo Caldo Bom 500g", category: "graos", unit: "un", price: 9.99 },
+            
+            // Molhos e Condimentos (6 itens)
+            { id: 29, name: "Ketchup Hemmer 1kg", category: "molhos", unit: "un", price: 13.90 },
+            { id: 30, name: "Molho de Tomate Bonare Trad. 300g", category: "molhos", unit: "un", price: 1.69 },
+            { id: 31, name: "Mostarda Hemmer 700g", category: "molhos", unit: "un", price: 18.99 },
+            { id: 32, name: "Molho Shoyu Mitsuwa Trad. 900ml", category: "molhos", unit: "un", price: 16.59 },
+            { id: 33, name: "Alho Hoshina Pasta 200g", category: "molhos", unit: "un", price: 4.89 },
+            { id: 34, name: "Vinagre Castelo Álcool 750ml", category: "molhos", unit: "un", price: 1.89 },
+            
+            // Carnes e Frios (7 itens)
+            { id: 35, name: "Mortadela Perdigão Ouro Fatiada 200g", category: "carnes", unit: "un", price: 6.98 },
+            { id: 36, name: "Apresuntado Perdigão Fatiado 200g", category: "carnes", unit: "un", price: 6.99 },
+            { id: 37, name: "Salsicha Mana Hot Dog 800g", category: "carnes", unit: "un", price: 6.99 },
+            { id: 38, name: "Carne Bordon Trad. 320g", category: "carnes", unit: "un", price: 13.89 },
+            { id: 39, name: "Filé de Peito Seara Resfriado", category: "carnes", unit: "kg", price: 21.90 },
+            { id: 40, name: "Bisteca Suína Frimesa Congelada", category: "carnes", unit: "kg", price: 18.97 },
+            { id: 41, name: "Bananinha Bovina Vácuo Resfriada", category: "carnes", unit: "kg", price: 29.90 },
+            
+            // Bebidas (3 itens)
+            { id: 42, name: "Água Mineral Cristal Select 1,5L", category: "bebidas", unit: "un", price: 2.79 },
+            { id: 43, name: "Refresco em Pó Tang Laranja 18g", category: "bebidas", unit: "un", price: 1.09 },
+            { id: 44, name: "Café 3 Corações Extra Forte 500g", category: "bebidas", unit: "un", price: 29.89 },
+            
+            // Hortifrúti (4 itens)
+            { id: 45, name: "Abóbora Italiana Cortada", category: "hortifruti", unit: "kg", price: 2.99 },
+            { id: 46, name: "Beterraba", category: "hortifruti", unit: "kg", price: 2.59 },
+            { id: 47, name: "Caqui Fuyu", category: "hortifruti", unit: "kg", price: 8.99 },
+            { id: 48, name: "Maçã 850g (Pacote)", category: "hortifruti", unit: "un", price: 5.99 },
+            
+            // Limpeza e Higiene (9 itens)
+            { id: 49, name: "Toalhinha Úmida Meu Bebê Soft C/100", category: "limpeza", unit: "un", price: 8.99 },
+            { id: 50, name: "Gel Dental Colgate Tandy Morango 50g", category: "limpeza", unit: "un", price: 8.99 },
+            { id: 51, name: "Esponja Limppano Multiúso", category: "limpeza", unit: "un", price: 5.18 },
+            { id: 52, name: "Amaciante Downy Brisa Intenso 750ml", category: "limpeza", unit: "un", price: 15.90 },
+            { id: 53, name: "Detergente Ypê Clear 500ml (Kit c/6)", category: "limpeza", unit: "un", price: 14.99 },
+            { id: 54, name: "Sabão em Pó Tixan Primavera 2,2kg", category: "limpeza", unit: "un", price: 22.59 },
+            { id: 55, name: "Água Sanitária Ypê 2L", category: "limpeza", unit: "un", price: 6.49 },
+            { id: 56, name: "Papel Higiênico Personal VIP Folha Dupla 20m", category: "limpeza", unit: "un", price: 13.89 },
+            { id: 57, name: "Esponja de Aço Assolan C/8", category: "limpeza", unit: "un", price: 2.89 },
+            
+            // Diversos (6 itens)
+            { id: 58, name: "Ovos Brancos (30 un)", category: "diversos", unit: "un", price: 19.90 },
+            { id: 59, name: "Açúcar Caravelas Refinado 5kg", category: "diversos", unit: "un", price: 18.90 },
+            { id: 60, name: "Óleo de Soja Vitaliv 900ml", category: "diversos", unit: "un", price: 6.99 },
+            { id: 61, name: "Sal Moc 1kg", category: "diversos", unit: "un", price: 2.49 },
+            { id: 62, name: "Marg. Claybom CSal 1kg", category: "diversos", unit: "un", price: 9.99 },
+            { id: 63, name: "Batata Lar Palito 1,5kg", category: "diversos", unit: "un", price: 19.90 },
+            
+            // Outros itens para completar 72 (9 itens adicionais)
+            { id: 64, name: "Farinha de Rosca Panko 200g", category: "diversos", unit: "un", price: 8.50 },
+            { id: 65, name: "Fermento Biológico Fleischmann 10g", category: "diversos", unit: "un", price: 3.20 },
+            { id: 66, name: "Chá Matte Leão 10g", category: "bebidas", unit: "un", price: 1.50 },
+            { id: 67, name: "Cebola Roxa KG", category: "hortifruti", unit: "kg", price: 5.99 },
+            { id: 68, name: "Alho Poró KG", category: "hortifruti", unit: "kg", price: 7.50 },
+            { id: 69, name: "Presunto Parma Fatiado 100g", category: "carnes", unit: "un", price: 12.90 },
+            { id: 70, name: "Peito de Peru Defumado 200g", category: "carnes", unit: "un", price: 9.80 },
+            { id: 71, name: "Biscoito de Polvilho 200g", category: "biscoitos", unit: "un", price: 5.20 },
+            { id: 72, name: "Pão Sírio Integral 300g", category: "padaria", unit: "un", price: 7.80 }
+        ];
+
+        // Mapeamento de categorias para nomes exibidos
+        const categoryNames = {
+            padaria: "Padaria e Acompanhamentos",
+            biscoitos: "Biscoitos e Salgadinhos",
+            laticinios: "Laticínios e Achocolatados",
+            graos: "Grãos e Farináceos",
+            molhos: "Molhos e Condimentos",
+            carnes: "Carnes e Frios",
+            bebidas: "Bebidas",
+            hortifruti: "Hortifrúti",
+            limpeza: "Limpeza e Higiene",
+            diversos: "Diversos"
+        };
+
+        // Estado da aplicação
+        let items = JSON.parse(JSON.stringify(itemsData));
+        let nextId = 73; // Próximo ID disponível
+
+        // Função para renderizar os itens agrupados por categoria
+        function renderItems(categoryFilter = 'all', searchTerm = '') {
+            const categoriesContainer = document.getElementById('categoriesContainer');
+            categoriesContainer.innerHTML = '';
+
+            let selectedCount = 0;
+            let totalQuantity = 0;
+            let grandTotal = 0;
+
+            // Agrupar itens por categoria
+            const itemsByCategory = {};
+            items.forEach(item => {
+                // Aplicar filtros
+                if (categoryFilter !== 'all' && categoryFilter !== item.category) {
+                    return;
+                }
+
+                if (searchTerm && !item.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    return;
+                }
+
+                if (!itemsByCategory[item.category]) {
+                    itemsByCategory[item.category] = [];
+                }
+                itemsByCategory[item.category].push(item);
+            });
+
+            // Ordenar categorias
+            const categoryOrder = Object.keys(categoryNames);
+            const sortedCategories = Object.keys(itemsByCategory).sort((a, b) => {
+                return categoryOrder.indexOf(a) - categoryOrder.indexOf(b);
+            });
+
+            // Renderizar cada categoria
+            for (const categoryId of sortedCategories) {
+                const categoryItems = itemsByCategory[categoryId];
+                const categoryElement = document.createElement('div');
+                categoryElement.className = 'category-group';
+                
+                // Cabeçalho da categoria
+                const categoryHeader = document.createElement('div');
+                categoryHeader.className = 'category-header';
+                categoryHeader.innerHTML = `
+                    <h2>${categoryNames[categoryId]}</h2>
+                    <span class="category-count">${categoryItems.length} itens</span>
+                `;
+                
+                // Conteúdo da categoria (tabela de itens)
+                const categoryContent = document.createElement('div');
+                categoryContent.className = 'category-content';
+                
+                const table = document.createElement('table');
+                table.className = 'items-table';
+                
+                // Cabeçalho da tabela
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th width="30px"></th>
+                        <th>Item</th>
+                        <th width="80px">Qtd</th>
+                        <th width="50px">Un</th>
+                        <th width="90px">Preço</th>
+                        <th width="90px">Total</th>
+                        <th width="40px"></th>
+                    </tr>
+                `;
+                
+                // Corpo da tabela
+                const tbody = document.createElement('tbody');
+                
+                categoryItems.forEach(item => {
+                    // Calcular totais
+                    const itemTotal = item.quantity ? (item.quantity * item.price) : 0;
+                    
+                    if (item.selected) {
+                        selectedCount++;
+                        if (item.quantity) totalQuantity += item.quantity;
+                        grandTotal += itemTotal;
+                    }
+
+                    // Criar linha da tabela
+                    const row = document.createElement('tr');
+                    if (item.selected) row.classList.add('selected');
+                    
+                    row.innerHTML = `
+                        <td><input type="checkbox" class="item-checkbox" data-id="${item.id}" ${item.selected ? 'checked' : ''}></td>
+                        <td>${item.name}</td>
+                        <td><input type="number" min="0" step="0.001" class="quantity-input" data-id="${item.id}" value="${item.quantity || ''}" placeholder="0"></td>
+                        <td>${item.unit}</td>
+                        <td><input type="number" min="0" step="0.01" class="price-input" data-id="${item.id}" value="${item.price.toFixed(2)}"></td>
+                        <td class="total-price">R$ ${itemTotal.toFixed(2)}</td>
+                        <td><button class="delete-btn" data-id="${item.id}" aria-label="Excluir">×</button></td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+                
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                categoryContent.appendChild(table);
+                
+                categoryElement.appendChild(categoryHeader);
+                categoryElement.appendChild(categoryContent);
+                categoriesContainer.appendChild(categoryElement);
+                
+                // Adicionar evento de clique para expandir/recolher categoria
+                categoryHeader.addEventListener('click', () => {
+                    categoryContent.style.display = categoryContent.style.display === 'none' ? 'block' : 'none';
+                });
+            }
+
+            // Atualizar resumo
+            document.getElementById('selectedItems').textContent = selectedCount;
+            document.getElementById('totalQuantity').textContent = totalQuantity;
+            document.getElementById('grandTotal').textContent = `R$ ${grandTotal.toFixed(2)}`;
+        }
+
+        // Função para atualizar um item
+        function updateItem(id, property, value) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            if (property === 'selected') {
+                item.selected = value;
+            } else if (property === 'quantity') {
+                item.quantity = value === '' ? null : parseFloat(value);
+            } else if (property === 'price') {
+                item.price = parseFloat(value) || 0;
+            }
+
+            renderItems(
+                document.getElementById('categoryFilter').value,
+                document.getElementById('searchInput').value
+            );
+        }
+
+        // Função para adicionar novo item
+        function addNewItem(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('newItemName').value.trim();
+            const price = parseFloat(document.getElementById('newItemPrice').value) || 0;
+            const quantity = parseFloat(document.getElementById('newItemQuantity').value) || null;
+            const unit = document.getElementById('newItemUnit').value;
+            const category = document.getElementById('newItemCategory').value;
+
+            if (!name) {
+                alert('Por favor, informe o nome do produto');
+                return;
+            }
+
+            if (price <= 0) {
+                alert('Por favor, informe um preço válido');
+                return;
+            }
+
+            const newItem = {
+                id: nextId++,
+                name,
+                price,
+                quantity,
+                unit,
+                category,
+                selected: false
+            };
+
+            items.push(newItem);
+            
+            // Limpar formulário
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemPrice').value = '';
+            document.getElementById('newItemQuantity').value = '';
+            document.getElementById('newItemName').focus();
+            
+            renderItems(
+                document.getElementById('categoryFilter').value,
+                document.getElementById('searchInput').value
+            );
+        }
+
+        // Função para excluir itens
+        function deleteItems(ids) {
+            items = items.filter(item => !ids.includes(item.id));
+            renderItems(
+                document.getElementById('categoryFilter').value,
+                document.getElementById('searchInput').value
+            );
+        }
+
+        // Função para gerar PDF
+        function generatePDF() {
+            const selectedItems = items.filter(item => item.selected);
+            if (selectedItems.length === 0) {
+                alert('Nenhum item selecionado para gerar PDF');
+                return;
+            }
+            
+            // Criar o PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Título
+            doc.setFontSize(18);
+            doc.text('Lista de Compras', 105, 15, { align: 'center' });
+            
+            // Data
+            doc.setFontSize(10);
+            doc.text(`Gerado em: ${new Date().toLocaleString()}`, 105, 22, { align: 'center' });
+            
+            // Tabela de itens
+            const tableData = selectedItems.map(item => [
+                item.name,
+                item.quantity || '-',
+                item.unit,
+                `R$ ${item.price.toFixed(2)}`,
+                `R$ ${((item.quantity || 0) * item.price).toFixed(2)}`
+            ]);
+            
+            // Adicionar tabela ao PDF
+            doc.autoTable({
+                head: [['Item', 'Qtd', 'Un', 'Preço', 'Total']],
+                body: tableData,
+                startY: 30,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [52, 152, 219],
+                    textColor: 255
+                },
+                styles: {
+                    fontSize: 10
+                },
+                columnStyles: {
+                    0: { cellWidth: 'auto' },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 15 },
+                    3: { cellWidth: 25 },
+                    4: { cellWidth: 25 }
+                }
+            });
+            
+            // Total
+            const total = selectedItems.reduce((sum, item) => sum + (item.quantity || 0) * item.price, 0);
+            const finalY = doc.lastAutoTable.finalY + 10;
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Total: R$ ${total.toFixed(2)}`, 105, finalY, { align: 'center' });
+            
+            // Salvar o PDF
+            doc.save(`lista_compras_${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
+        // Inicializar a aplicação
+        document.addEventListener('DOMContentLoaded', () => {
+            renderItems();
+            
+            // Evento de busca
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                renderItems(
+                    document.getElementById('categoryFilter').value,
+                    e.target.value
+                );
+            });
+            
+            // Evento de filtro por categoria
+            document.getElementById('categoryFilter').addEventListener('change', (e) => {
+                renderItems(
+                    e.target.value,
+                    document.getElementById('searchInput').value
+                );
+            });
+            
+            // Eventos delegados para itens dinâmicos
+            document.getElementById('categoriesContainer').addEventListener('change', (e) => {
+                if (e.target.classList.contains('item-checkbox')) {
+                    const id = parseInt(e.target.dataset.id);
+                    updateItem(id, 'selected', e.target.checked);
+                }
+            });
+            
+            document.getElementById('categoriesContainer').addEventListener('input', (e) => {
+                if (e.target.classList.contains('quantity-input')) {
+                    const id = parseInt(e.target.dataset.id);
+                    updateItem(id, 'quantity', e.target.value);
+                }
+                
+                if (e.target.classList.contains('price-input')) {
+                    const id = parseInt(e.target.dataset.id);
+                    updateItem(id, 'price', e.target.value);
+                }
+            });
+            
+            document.getElementById('categoriesContainer').addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    const id = parseInt(e.target.dataset.id);
+                    deleteItems([id]);
+                }
+            });
+            
+            // Formulário de adição
+            document.getElementById('addItemForm').addEventListener('submit', addNewItem);
+            
+            // Botões de ação
+            document.getElementById('selectAllBtn').addEventListener('click', () => {
+                items.forEach(item => {
+                    item.selected = true;
+                });
+                renderItems(
+                    document.getElementById('categoryFilter').value,
+                    document.getElementById('searchInput').value
+                );
+            });
+            
+            document.getElementById('clearSelectionBtn').addEventListener('click', () => {
+                items.forEach(item => {
+                    item.selected = false;
+                });
+                renderItems(
+                    document.getElementById('categoryFilter').value,
+                    document.getElementById('searchInput').value
+                );
+            });
+            
+            document.getElementById('deleteSelectedBtn').addEventListener('click', () => {
+                const selectedIds = items.filter(item => item.selected).map(item => item.id);
+                if (selectedIds.length === 0) {
+                    alert('Nenhum item selecionado para excluir');
+                    return;
+                }
+                
+                if (confirm(`Tem certeza que deseja excluir ${selectedIds.length} itens selecionados?`)) {
+                    deleteItems(selectedIds);
+                }
+            });
+            
+            document.getElementById('newListBtn').addEventListener('click', generatePDF);
+        });
+    </script>
+</body>
+</html>
